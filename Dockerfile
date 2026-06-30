@@ -1,22 +1,18 @@
-FROM php:8.2-apache
-
-# التأكد من تفعيل MPM واحد فقط (يمنع خطأ "More than one MPM loaded")
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true; \
-    a2enmod mpm_prefork
+FROM php:8.2-cli
 
 # امتداد الاتصال بـ MySQL
 RUN docker-php-ext-install pdo_mysql
 
-# نسخ ملفات المشروع
+WORKDIR /var/www/html
 COPY . /var/www/html/
 
-# مجلد الرفع قابل للكتابة من Apache
-RUN chown -R www-data:www-data /var/www/html/uploads || true
+# مجلد الرفع قابل للكتابة
+RUN chmod -R 0777 uploads || true
 
-# سكربت التشغيل (يضبط المنفذ حسب Railway)
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
+# عدد عمّال السيرفر المدمج (لأداء أفضل مع أكتر من مستخدم)
+ENV PHP_CLI_SERVER_WORKERS=4
 ENV PORT=80
 EXPOSE 80
-ENTRYPOINT ["docker-entrypoint.sh"]
+
+# سيرفر PHP المدمج — لا توجد به مشكلة MPM إطلاقاً
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-80} -t /var/www/html"]
