@@ -1,5 +1,9 @@
 FROM php:8.2-apache
 
+# التأكد من تفعيل MPM واحد فقط (يمنع خطأ "More than one MPM loaded")
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true; \
+    a2enmod mpm_prefork
+
 # امتداد الاتصال بـ MySQL
 RUN docker-php-ext-install pdo_mysql
 
